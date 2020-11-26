@@ -16,8 +16,8 @@ pattern 1 : any string to be replaced can be added after a pipe (|)
 pattern 2 : any regex inside ()
 '''
 clean_data_pattern = {
-    1 : '(click here|xxxx|yyy)',
-    2: '(\[\s*[\s\w]+\s*\])'
+    1 : r'(click here|xxxx|yyy)',
+    2: r'(\[\s*[\s\w]+\s*\])'
 }
 
 '''
@@ -124,11 +124,23 @@ class Genie():
 
 
 if __name__ == "__main__":
-    url = 'https://en.wikipedia.org/wiki/Chicken_soup'
+    url = 'https://www.mayoclinic.org/diseases-conditions/chickenpox/symptoms-causes/syc-20351282'
+    url = 'https://www.mayoclinic.org/diseases-conditions/common-cold/symptoms-causes/syc-20351605'
     genie = Genie(url, pattern=clean_data_pattern[2], mode='r')
     data = genie.get_data()
-    genie.save_data(data, "soup.txt")
-    print(genie.show_summary())
+    genie.save_data(data, "common-cold.txt")
+    #print(genie.show_summary())
+    import nltk
+    sent_list = nltk.sent_tokenize(data.lower())
+    #print(sent_list)
+    titles = ["overview", "symptoms", "when to see a doctor", "causes", "risk factors", "complications", "prevention", "Who's at risk?"]
+    print("==========")
+    for each in sent_list:
+        new = each.split('\n\n')
+        #print(new)
+        for e in new:
+            if e in titles:
+                print(e)
 
 
 
