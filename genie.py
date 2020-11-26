@@ -41,8 +41,8 @@ class Genie():
         self.article.parse()
         self.article.nlp()
 
-        self.corpus = self.article.text
-        self.summary = self.article.summary
+        self.corpus = self.article.text.lower()
+        self.summary = self.article.summary.lower()
 
     def init_article_mt(self, url_list):
         # multi threaded article extraction
