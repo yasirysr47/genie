@@ -8,12 +8,25 @@ or NLP processed Corpus for any specific use.
 
 -------
 
-Genie has a class named **genie** which takes the URL as the parameter.
+Genie has a class named **Genie** which takes the URL as the parameter.
 Eg:
 ``` 
 object = genie(url)
 object.show_summary()
 ```
+
+Patterns are there to clean data with certain patterns
+
+>pattern 1 : any string to be replaced can be added after a pipe (|)
+>pattern 2 : any regex inside parenthesis
+
+
+modes are to say what kind of cleaning to be done.
+
+>modes available are:
+>"p" : means take pattern 1 and do simple substring substitution
+>"r" : means take pattern 2 and do regex substring substitution
+
 
 The features are as follows:
 

@@ -1,6 +1,7 @@
 import random
 import string
 import warnings
+import re
 import numpy as np
 import newspaper as paper
 from newspaper import Article
@@ -10,9 +11,26 @@ from sklearn.metrics.pairwise import cosine_similarity
 warnings.filterwarnings('ignore')
 
 
-class genie():
-    def __init__(self, url):
+'''
+pattern 1 : any string to be replaced can be added after a pipe (|)
+pattern 2 : any regex inside ()
+'''
+clean_data_pattern = {
+    1 : '(click here|xxxx|yyy)',
+    2: '(\[\s*[\s\w]+\s*\])'
+}
+
+'''
+modes available are:
+"p" : means take pattern 1 and do simple substring substitution
+"r" : means take pattern 2 and do regex substring substitution
+'''
+
+class Genie():
+    def __init__(self, url, pattern=None, mode=None):
         self.init_article(url)
+        self.mode = mode
+        self.pattern = pattern
         # TODO: include multi thread or url as a list option
         # init_article_mt(url_list)
 
@@ -31,15 +49,29 @@ class genie():
         #TODO
         pass
     
+    def clean_data(self, data, pattern, mode):
+        if mode == 'r':
+            data =  re.sub(pattern, '', data)
+        elif mode == 'p':
+            data = data.replace(pattern, '')
+
+        return data
+
     def get_data(self):
         # print entire data from the article
-        #TODO: clean data
-        return self.corpus
+        data = self.corpus
+        if self.mode:
+            data = self.clean_data(data, self.pattern, self.mode)
+
+        return data
     
     def show_summary(self):
         # show the summary of the article in the url
-        #TODO: clean summary
-        return self.summary
+        summary = self.summary
+        if self.mode:
+            summary = self.clean_data(summary, self.pattern, self.mode)
+            
+        return summary
 
     def get_keywords(self):
         # top keywords present in the article
@@ -86,11 +118,18 @@ class genie():
         # irrespective of the url
         return paper.popular_urls()
 
+    def save_data(self, data, file):
+        with open(file, "w+") as fp:
+            fp.write(data)
+    
+
 
 if __name__ == "__main__":
     url = 'https://en.wikipedia.org/wiki/Chicken_soup'
-    data = genie(url)
-    print(data.show_summary())
+    genie = Genie(url, pattern=clean_data_pattern[2], mode='r')
+    data = genie.get_data()
+    genie.save_data(data, "soup.txt")
+    print(genie.show_summary())
 
 
 
