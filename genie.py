@@ -4,6 +4,8 @@ import nltk
 import warnings
 import re, sys, os
 import heapq
+import urllib.request
+import bs4 as bs
 import numpy as np
 import newspaper as paper
 from newspaper import Article
@@ -22,23 +24,14 @@ STOPWORDS = nltk.corpus.stopwords.words('english')
 
 
 '''
-pattern 1 : any string to be replaced can be added after a pipe (|)
-pattern 2 : any regex inside ()
-'''
-clean_data_pattern = {
-    1 : r'(click here|xxxx|yyy)',
-    2: r'(\[\s*[\s\w]+\s*\])'
-}
-
-'''
 modes available are:
 "p" : means take pattern 1 and do simple substring substitution
 "r" : means take pattern 2 and do regex substring substitution
 '''
 
 class Genie():
-    def __init__(self, url, pattern=None, mode=None):
-        self.init_article(url)
+    def __init__(self, url='', pattern=None, mode=None):
+        #self.init_article(url)
         self.mode = mode
         self.pattern = pattern
         # TODO: include multi thread or url as a list option
@@ -53,11 +46,36 @@ class Genie():
 
         self.corpus = self.article.text.lower()
         self.summary = self.article.summary.lower()
-
+    
     def init_article_mt(self, url_list):
         # multi threaded article extraction
         #TODO
         pass
+
+    def convert_parse_data(self, data):
+        parsed_article = data
+        [tmp.extract() for tmp in parsed_article.select('.hidden')]
+        paragraphs = parsed_article.find_all(src.parse_field)
+        article_text = ""
+        for para in paragraphs:
+            txt = para.text.strip().lower()
+            if any(word in txt for word in src.blacklist_words):
+                continue
+            if para.name == 'h1':
+                article_text = "{}\n<h1>{}".format(article_text, txt)
+            elif para.name == 'h2':
+                article_text = "{}\n<h2>{}".format(article_text, txt)
+            elif para.name == 'h3':
+                article_text = "{}\n<h3>{}".format(article_text, txt)
+            elif para.name == 'li':
+                article_text = "{}\n>>>{}".format(article_text, txt)
+            elif para.name == 'p':
+                article_text = "{}\n<p>{}".format(article_text, txt)
+        
+        return article_text
+
+    def get_data(self, data=''):
+        return self.parsed_article
     
     def clean_data(self, data, pattern='', mode=''):
         if mode == 'r':
@@ -69,12 +87,11 @@ class Genie():
             data = re.sub(r'\s+', ' ', data)
         return data
 
-    def get_data(self):
+    def get_article_data(self):
         # print entire data from the article
         data = self.corpus
         if self.mode:
             data = self.clean_data(data, self.pattern, self.mode)
-
         return data
     
     def show_summary(self):
@@ -111,50 +128,6 @@ class Genie():
         summary = ' '.join(summary_sent)
 
         return summary
-        
-    def get_sub_heading_data(self, data):
-        data = data.replace('\n\n', '.  ').replace('..','. ')
-        data_block = {}
-        sub_file = open(PATH.sub_heading, "r")
-        sub_headings = sub_file.readline().lower().replace(', ',',').split(',')
-        print(sub_headings)
-        sub_file.close()
-        cur_head = ''
-        prev_head = ''
-        sent_list = nltk.sent_tokenize(data)
-        para_sent_list = []
-        for sent in sent_list:
-            sent = sent.strip('.')
-            skip_flag = 0
-            for bword in src.blacklist_words:
-                if bword in sent:
-                    skip_flag = 1
-                    break
-            if skip_flag:
-                continue
-            flag = 0
-            if len(sent.split()) == 1 or sent in sub_headings:
-                word = sent
-                if word in sub_headings and word != cur_head:
-                    prev_head = cur_head
-                    flag = 1
-                    cur_head = word 
-            sent = sent.strip()
-            if flag:
-                if prev_head:
-                    data_block[prev_head] = para_sent_list
-                    para_sent_list = []
-                sent = sent.replace(cur_head, '', 1).strip()
-                
-            if sent and sent not in para_sent_list:
-                para_sent_list.append(sent)
-            #print(para_sent_list)
-
-        if cur_head != prev_head:
-            data_block[cur_head] = para_sent_list
-
-        return data_block
-        
 
     def get_keywords(self):
         # top keywords present in the article
@@ -209,7 +182,7 @@ class Genie():
 if __name__ == "__main__":
     url = 'https://www.mayoclinic.org/diseases-conditions/chickenpox/symptoms-causes/syc-20351282'
     #url = 'https://www.mayoclinic.org/diseases-conditions/common-cold/symptoms-causes/syc-20351605'
-    genie = Genie(url, pattern=clean_data_pattern[2], mode='r')
+    genie = Genie(url, pattern=src.clean_data_pattern[2], mode='r')
     data = genie.get_data()
     #genie.save_data(data, "common-cold.txt")
     #summ = genie.generate_summary(data)
@@ -217,7 +190,7 @@ if __name__ == "__main__":
     #print(summ)
     #print(data)
     print("===== my summary ====")
-    db = genie.get_sub_heading_data(data)
+    #db = genie.get_sub_heading_data(data)
     #db = {}
     for k,v in db.items():
         print(k)
